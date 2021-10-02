@@ -1,3 +1,3 @@
 <?php
 
-require "MaineForm.php";
+require "MaineForm.html";
