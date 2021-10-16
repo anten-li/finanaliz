@@ -1,0 +1,41 @@
+.form-blocking {
+    position  : fixed;
+    left      : 0px;
+    right     : 0px;
+    top       : 0px;
+    bottom    : 0px;
+    text-align: center;
+}
+
+.form-blocking::before {
+    height        : 100%;
+    display       : inline-block;
+    vertical-align: middle;
+    content       : '';
+}
+
+.form-blocking>div {
+    display: inline-block;
+}
+
+.form-login label {
+    display      : block;
+    margin-bottom: 0.2em;
+}
+
+.form-login .head {
+    text-align: right;
+}
+
+.black-transparent {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.form-background {
+    background-color: white;
+}
+
+.form-border {
+    border : 0.1em solid;
+    padding: 0.5em;
+}

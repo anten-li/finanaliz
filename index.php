@@ -4,7 +4,8 @@ spl_autoload_register(function ($class_name) {
 });
 
 try {
-    $Base = new laoServer();
+    $Base = new LAOServer();
+    $Base->doCommand();
 } catch (\Exception $e) {
     echo $e->getMessage();
     die;

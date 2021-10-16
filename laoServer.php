@@ -1,7 +1,7 @@
 <?php
-class laoServer
+class LAOServer
 {
-    protected $QueryParam;
+    protected $queryParam;
     protected $cnn;
     protected $pref;
 
@@ -9,7 +9,7 @@ class laoServer
     {
         set_error_handler(array(
             $this,
-            'Except'
+            'except'
         ));
 
         require 'setup.php';
@@ -29,15 +29,48 @@ class laoServer
                 $setup["sql_pass"]
             );
             $this->cnn->set_charset("utf8");
-            $this->CreateBase($setup["sql_DBname"]);
+            $this->createBase($setup["sql_DBname"]);
         }
 
-        $this->QueryParam = file_get_contents('php://input');
+        $this->queryParam = file_get_contents('php://input');
     }
 
-    protected function CreateBase($DBname)
+    public function doCommand()
     {
-        if ($this->Query("SHOW DATABASES LIKE '$DBname'")->num_rows == 0) {
+        if ($this->queryParam) {
+            if (isset($_SERVER['PHP_AUTH_USER'])) {
+                $this->login();
+            } elseif (
+                isset($_SERVER['HTTP_AUTHORIZATION']) and
+                $this->authenticate($_SERVER['HTTP_AUTHORIZATION'])
+            ) {
+            } else {
+                $this->exit("authentication failure", true);
+            }
+        }
+    }
+
+    protected function authenticate()
+    {
+        return false;
+    }
+
+    protected function login()
+    {
+    }
+
+    protected function exit($result, $onErr = false)
+    {
+        print_r(json_encode([
+            "S_Ok" => !$onErr,
+            "result" => $result
+        ]));
+        exit();
+    }
+
+    protected function createBase($DBname)
+    {
+        if ($this->query("SHOW DATABASES LIKE '$DBname'")->num_rows == 0) {
 
             $this->cnn->multi_query(
                 "CREATE DATABASE {$DBname} CHARACTER SET utf8; " .
@@ -61,19 +94,19 @@ class laoServer
                 $this->cnn->next_result();
                 if ($this->cnn->errno) {
                     $msg = $this->cnn->error;
-                    $this->Query("DROP DATABASE IF EXISTS $DBname");
+                    $this->query("DROP DATABASE IF EXISTS $DBname");
                     throw new \Exception("$msg");
                 }
             }
-            $this->AddUser('admin', 'admin');
+            $this->addUser('admin', 'admin');
         }
     }
 
-    protected function AddUser($Login, $PWD, $Role = null, $Name = null)
+    protected function addUser($Login, $PWD, $Role = null, $Name = null)
     {
         $salt = (string) rand(100, 999);
-        $this->SetRow([
-            'Ref' => $this->NewGUID(),
+        $this->setRow([
+            'Ref' => $this->createGUID(),
             'Role' => $Role ?? 1,
             'Login' => $Login,
             'PWD' => md5($PWD . $salt),
@@ -82,42 +115,42 @@ class laoServer
         ], 'user');
     }
 
-    protected function GetRow($Ref, $Table)
+    protected function getRow($Ref, $Table)
     {
-        return $this->Query("SELECT * FROM {$this->pref}{$this->Escape($Table)} WHERE Ref = {$this->SQLValue($Ref)}")
+        return $this->query("SELECT * FROM {$this->pref}{$this->escape($Table)} WHERE Ref = {$this->SQLValue($Ref)}")
             ->fetch_all(MYSQLI_ASSOC);
     }
 
-    protected function SetRow($Row, $Table)
+    protected function setRow($Row, $Table)
     {
         $text = '';
-        if (count($this->GetRow($Row['Ref'], $Table)) == 0) {
+        if (count($this->getRow($Row['Ref'], $Table)) == 0) {
             foreach ($Row as $Key => $Value) {
                 $text .= $text == '' ? '' : ', ';
-                $text .= "{$this->Escape($Key)} = {$this->SQLValue($Value)}";
+                $text .= "{$this->escape($Key)} = {$this->SQLValue($Value)}";
             }
-            $text = "INSERT INTO {$this->pref}{$this->Escape($Table)} SET " . $text;
+            $text = "INSERT INTO {$this->pref}{$this->escape($Table)} SET " . $text;
         }
 
-        $this->Query($text);
+        $this->query($text);
     }
 
-    protected function Query($Text)
+    protected function query($Text)
     {
         try {
             $rezult = $this->cnn->query($Text);
         } catch (\Exception $e) {
-            throw new \Exception("{$e->getMessage()}; $Text");
+            $this->exit("{$e->getMessage()}; $Text", true);
         }
         if (!$rezult)
-            throw new \Exception("{$this->cnn->error}; $Text");
+            $this->exit("{$this->cnn->error}; $Text", true);
         return $rezult;
     }
 
     protected function SQLValue($Value)
     {
         if (is_string($Value)) {
-            return "'{$this->Escape($Value)}'";
+            return "'{$this->escape($Value)}'";
         } elseif (is_int($Value)) {
             return "{$Value}";
         } elseif (is_float($Value)) {
@@ -129,11 +162,11 @@ class laoServer
                 return 'FALSE';
             }
         } else {
-            throw new \Exception('Не верный тип');
+            $this->exit('Не верный тип', true);
         }
     }
 
-    protected function Escape(string $Text)
+    protected function escape(string $Text)
     {
         $Rezult = trim($Text);
         if (strlen($Rezult) > 1 and $Rezult[0] == '"' and $Rezult[strlen($Rezult) - 1] == '"') {
@@ -142,7 +175,7 @@ class laoServer
         return $this->cnn->real_escape_string($Rezult);
     }
 
-    protected static function NewGUID()
+    protected static function createGUID()
     {
         return sprintf(
             '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
@@ -157,7 +190,7 @@ class laoServer
         );
     }
 
-    public static function Except($errno, $errstr, $errfile = null, $errline = null)
+    public static function except($errno, $errstr, $errfile = null, $errline = null)
     {
         throw new \Exception($errstr, $errno);
     }
