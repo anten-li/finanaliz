@@ -7,8 +7,7 @@ try {
     $Base = new LAOServer();
     $Base->doCommand();
 } catch (\Exception $e) {
-    echo $e->getMessage();
-    die;
+    LAOServer::exit($e->getMessage(), true);
 }
 
 require 'MainForm.html';

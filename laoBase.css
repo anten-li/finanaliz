@@ -27,6 +27,20 @@
     text-align: right;
 }
 
+.user-block {
+    float: right;
+}
+
+.user-block>span {
+    margin-left: 0.5em;
+    user-select: none;
+    cursor     : pointer;
+}
+
+.user-block>span:hover {
+    font-weight: bold;
+}
+
 .black-transparent {
     background-color: rgba(0, 0, 0, 0.5);
 }

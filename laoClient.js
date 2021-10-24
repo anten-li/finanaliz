@@ -1,23 +1,42 @@
 'use strict';
+
+/**
+ * @typedef {{Ref:string, Role:number, Hash:string, Name:string}} laoUser
+ * 
+ */
+
+/** @type userBlock */
+var user;
+
 class ServerCall {
     constructor(callBackFunc, command, parameters, options) {
         this.callBackFunc = callBackFunc;
 
         parameters = parameters || {};
-        parameters.cmd = command;
+        parameters.cmd = command || '';
 
         options = options || {};
         options.method = options.method || 'POST';
         options.body = JSON.stringify(parameters);
+
+        if (command) {
+            options.headers = options.headers || {};
+            options.headers.Authorization = 'Bearer ' + user.user.Hash;
+            options.headers['Content-Type'] = 'application/json';
+        }
 
         this.block = new formBlocking();
 
         try {
             fetch('index.php', options).then(
                 response => response.ok ? response.json() : new formAlert(response.statusText)).then(
-                    response => this.onResponse(response));
+                    response => this.onResponse(response),
+                    err => {
+                        this.block.remove();
+                        new formAlert(err)
+                    });
         } catch (error) {
-            block.remove();
+            this.block.remove();
             new formAlert('fetch не поддерживается');
         }
     }
@@ -78,10 +97,81 @@ class formLogin extends formBlocking {
         cont.append(createInput('login', 'пользователь:'));
         cont.append(createInput('password', 'пароль:', { 'pwd': true }));
 
-        document.forms.login.append(createButton('Ок', () => new ServerCall(() => { }, 'getSeanceParam')));
+        document.forms.login.append(createButton('Ок', ev => this.login()));
 
         this.innerForm.classList.add('form-login');
     }
+    login() {
+        new ServerCall(
+            result => { this.onResponse(result) },
+            undefined, undefined,
+            {
+                headers: {
+                    Authorization: 'Basic ' + b64EncodeUnicode(
+                        `${document.forms.login.login.value}:${document.forms.login.password.value}`)
+                }
+            });
+    }
+    onResponse(result) {
+        user.setUser(result);
+        this.remove();
+
+        //
+        new formUserList();
+        //
+    }
+}
+
+class userBlock extends laoElement {
+    constructor() {
+        super();
+
+        this.user = {};
+        this.elmUser = document.createElement('span');
+        this.elm.append(this.elmUser);
+
+        this.elmExit = document.createElement('span');
+        this.elm.append(this.elmExit);
+        this.elmExit.innerHTML = 'Выход';
+        this.elmExit.onclick = ev => { this.exit() };
+
+        this.elm.classList.add('user-block');
+    }
+    /**
+     * 
+     * @param {laoUser} usr 
+     */
+    setUser(usr) {
+        /** @type {laoUser} */
+        this.user = usr;
+        this.elmUser.innerHTML = this.user.Name;
+    }
+    exit() {
+        this.user = {}
+        this.elmUser.innerHTML = '';
+
+        new formLogin();
+    }
+}
+
+class formUserList extends laoElement {
+    constructor(parent) {
+        super('div', parent)
+
+        new ServerCall(
+            result => { this.onLoad(result) },
+            'getUserList'
+        );
+    }
+    onLoad(result) {
+
+    }
+}
+
+function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode('0x' + p1);
+    }));
 }
 
 function createInput(name, value, params = {}) {
@@ -111,4 +201,8 @@ function createContainer(cls) {
     return cont;
 }
 
-window.onload = () => new formLogin()
+window.onload = ev => {
+    user = new userBlock();
+
+    new formLogin()
+}

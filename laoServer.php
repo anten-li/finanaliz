@@ -4,6 +4,7 @@ class LAOServer
     protected $queryParam;
     protected $cnn;
     protected $pref;
+    protected $User;
 
     function __construct()
     {
@@ -44,28 +45,50 @@ class LAOServer
                 isset($_SERVER['HTTP_AUTHORIZATION']) and
                 $this->authenticate($_SERVER['HTTP_AUTHORIZATION'])
             ) {
+                $inParam = json_decode($this->queryParam, true);
+                if ($inParam['cmd'] == 'getUserList')
+                    $this->exit($this->getUserList());
             } else {
                 $this->exit("authentication failure", true);
             }
         }
     }
 
-    protected function authenticate()
+    protected function authenticate($auth)
     {
+        $token = [];
+        if (!preg_match('/Bearer (\w+)/', $auth, $token) or !$token[1])
+            return false;
+        $token = $token[1];
+
+        $User = $this->query(
+            "SELECT * FROM {$this->pref}user AS T
+            WHERE T.Hash = {$this->SQLValue($token)}"
+        )->fetch_all(MYSQLI_ASSOC);
+
+        if (count($User) == 1) {
+            $this->User = $User[0];
+            return true;
+        }
+
         return false;
     }
 
     protected function login()
     {
-    }
+        $usr = $this->query(
+            "SELECT * FROM {$this->pref}user AS T 
+            WHERE T.Login = {$this->SQLValue($_SERVER['PHP_AUTH_USER'])}"
+        )->fetch_all(MYSQLI_ASSOC);
 
-    protected function exit($result, $onErr = false)
-    {
-        print_r(json_encode([
-            "S_Ok" => !$onErr,
-            "result" => $result
-        ]));
-        exit();
+        if (count($usr) == 1 and $usr[0]['PWD'] == md5($_SERVER['PHP_AUTH_PW'] . $usr[0]['Salt'])) {
+            $usr = $usr[0];
+            $usr['Hash'] = md5($this->createGUID());
+            $usr['LData'] = time();
+            $this->setRow($usr, 'user');
+
+            $this->exit(LAOServer::arrCopy($usr, 'Ref, Role, Hash, Name'));
+        } else $this->exit('не верный логин или пароль', true);
     }
 
     protected function createBase($DBname)
@@ -85,7 +108,8 @@ class LAOServer
                     " PWD VARCHAR(32), " .
                     " Hash VARCHAR(32), " .
                     " Salt VARCHAR(3), " .
-                    " Name VARCHAR(255)" .
+                    " Name VARCHAR(255), " .
+                    " LData INT UNSIGNED " .
                     ");  " .
                     "INSERT INTO {$this->pref}config SET " .
                     " ver = 1; "
@@ -115,6 +139,13 @@ class LAOServer
         ], 'user');
     }
 
+    protected function getUserList()
+    {
+        return $this->query(
+            "SELECT Name, Role, Ref, LData  FROM {$this->pref}user"
+        )->fetch_all(MYSQLI_ASSOC);
+    }
+
     protected function getRow($Ref, $Table)
     {
         return $this->query("SELECT * FROM {$this->pref}{$this->escape($Table)} WHERE Ref = {$this->SQLValue($Ref)}")
@@ -124,12 +155,16 @@ class LAOServer
     protected function setRow($Row, $Table)
     {
         $text = '';
+        foreach ($Row as $Key => $Value) {
+            $text .= $text == '' ? '' : ', ';
+            $text .= "{$this->escape($Key)} = {$this->SQLValue($Value)}";
+        }
+
         if (count($this->getRow($Row['Ref'], $Table)) == 0) {
-            foreach ($Row as $Key => $Value) {
-                $text .= $text == '' ? '' : ', ';
-                $text .= "{$this->escape($Key)} = {$this->SQLValue($Value)}";
-            }
             $text = "INSERT INTO {$this->pref}{$this->escape($Table)} SET " . $text;
+        } else {
+            $text = "UPDATE {$this->pref}{$this->escape($Table)} 
+                SET {$text} WHERE Ref = {$this->SQLValue($Row['Ref'])}";
         }
 
         $this->query($text);
@@ -161,6 +196,8 @@ class LAOServer
             } else {
                 return 'FALSE';
             }
+        } elseif (is_null($Value)) {
+            return 'NULL';
         } else {
             $this->exit('Не верный тип', true);
         }
@@ -188,6 +225,25 @@ class LAOServer
             mt_rand(0, 0xffff),
             mt_rand(0, 0xffff)
         );
+    }
+
+    protected static function arrCopy($arr, $field)
+    {
+        $result = [];
+        foreach (explode(',', $field) as $value) {
+            $value = trim($value);
+            $result[$value] = $arr[$value];
+        };
+        return $result;
+    }
+
+    public static function exit($result, $onErr = false)
+    {
+        print_r(json_encode([
+            "S_Ok" => !$onErr,
+            "result" => $result
+        ]));
+        exit();
     }
 
     public static function except($errno, $errstr, $errfile = null, $errline = null)
