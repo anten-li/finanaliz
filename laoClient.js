@@ -1,12 +1,13 @@
 'use strict';
+// @ts-check
 
-/**
- * @typedef {{Ref:string, Role:number, Hash:string, Name:string}} laoUser
- * 
- */
+/** @typedef {{Ref:string, Role:number, Hash:string, Name:string}} laoUser */
 
-/** @type userBlock */
+/** @typedef {{name:string, repres:string, visible:boolean}} laoTablColumn */
+
+/** @type {userBlock} */
 var user;
+var userTable;
 
 class ServerCall {
     constructor(callBackFunc, command, parameters, options) {
@@ -54,6 +55,25 @@ class laoElement {
     }
     remove() {
         this.elm.remove();
+    }
+}
+
+class TableElement extends laoElement {
+    constructor(parent) {
+        super('table', parent);
+        this.elm.createTHead();
+        this.elm.createTBody();
+        this.elm.tHead.insertRow();
+    }
+    /**
+     * 
+     * @param {laoTablColumn} col 
+     */
+    addColumn(col) {
+        var cell = this.elm.tHead.rows[0].insertCell();
+        cell.dataset.name = col.name;
+        cell.innerHTML = col.repres;
+        if (typeof col.visible != 'undefined' && !col.visible) cell.style.display = 'none';
     }
 }
 
@@ -122,6 +142,9 @@ class formLogin extends formBlocking {
     }
 }
 
+/**
+ * плашка с пользователем и выходом
+ */
 class userBlock extends laoElement {
     constructor() {
         super();
@@ -203,6 +226,12 @@ function createContainer(cls) {
 
 window.onload = ev => {
     user = new userBlock();
+    userTable = new TableElement();
+
+    userTable.addColumn({ name: 'name', repres: 'Наименование' });
+    userTable.addColumn({ name: 'role', repres: 'Роль' });
+    userTable.addColumn({ name: 'ref', repres: '', visible: false });
+
 
     new formLogin()
 }
