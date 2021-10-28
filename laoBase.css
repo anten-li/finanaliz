@@ -1,3 +1,12 @@
+.common-table {
+    border-collapse: collapse;
+}
+
+.common-table td {
+    border : solid 0.1em;
+    padding: 0.3em;
+}
+
 .form-blocking {
     position  : fixed;
     left      : 0px;

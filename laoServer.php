@@ -76,10 +76,10 @@ class LAOServer
 
     protected function login()
     {
-        $usr = $this->query(
+        $usr = $this->queryRes(
             "SELECT * FROM {$this->pref}user AS T 
             WHERE T.Login = {$this->SQLValue($_SERVER['PHP_AUTH_USER'])}"
-        )->fetch_all(MYSQLI_ASSOC);
+        );
 
         if (count($usr) == 1 and $usr[0]['PWD'] == md5($_SERVER['PHP_AUTH_PW'] . $usr[0]['Salt'])) {
             $usr = $usr[0];
@@ -141,15 +141,14 @@ class LAOServer
 
     protected function getUserList()
     {
-        return $this->query(
+        return $this->queryRes(
             "SELECT Name, Role, Ref, LData  FROM {$this->pref}user"
-        )->fetch_all(MYSQLI_ASSOC);
+        );
     }
 
     protected function getRow($Ref, $Table)
     {
-        return $this->query("SELECT * FROM {$this->pref}{$this->escape($Table)} WHERE Ref = {$this->SQLValue($Ref)}")
-            ->fetch_all(MYSQLI_ASSOC);
+        return $this->queryRes("SELECT * FROM {$this->pref}{$this->escape($Table)} WHERE Ref = {$this->SQLValue($Ref)}");
     }
 
     protected function setRow($Row, $Table)
@@ -180,6 +179,23 @@ class LAOServer
         if (!$rezult)
             $this->exit("{$this->cnn->error}; $Text", true);
         return $rezult;
+    }
+    protected function queryRes($Text)
+    {
+        $results = $this->query($Text);
+
+        $fields = $results->fetch_fields();
+        $results = $results->fetch_all(MYSQLI_ASSOC);
+
+        for ($i = 0; $i < count($results); $i++) {
+            foreach ($fields as $field) {
+                if ($field->type == MYSQLI_TYPE_TINY) {
+                    $results[$i][$field->name] = (int)$results[$i][$field->name];
+                }
+            }
+        }
+
+        return $results;
     }
 
     protected function SQLValue($Value)

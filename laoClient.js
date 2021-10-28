@@ -9,6 +9,10 @@
 var user;
 var userTable;
 
+var fUserList;
+
+var listRole = ['пользователь', 'админ'];
+
 class ServerCall {
     constructor(callBackFunc, command, parameters, options) {
         this.callBackFunc = callBackFunc;
@@ -56,6 +60,9 @@ class laoElement {
     remove() {
         this.elm.remove();
     }
+    clear() {
+        this.elm.innerHTML = '';
+    }
 }
 
 class TableElement extends laoElement {
@@ -64,16 +71,35 @@ class TableElement extends laoElement {
         this.elm.createTHead();
         this.elm.createTBody();
         this.elm.tHead.insertRow();
+        this.elm.classList.add('common-table');
     }
     /**
      * 
      * @param {laoTablColumn} col 
      */
     addColumn(col) {
+        if (col.visible === undefined) col.visible = true;
+
         var cell = this.elm.tHead.rows[0].insertCell();
         cell.dataset.name = col.name;
         cell.innerHTML = col.repres;
-        if (typeof col.visible != 'undefined' && !col.visible) cell.style.display = 'none';
+
+        if (!col.visible) cell.style.display = 'none';
+    }
+    loadData(arr) {
+        var row = this.elm.tHead.rows[0];
+        for (let i = 0; i < arr.length; i++) {
+            var nRow = this.elm.tBodies[0].insertRow();
+            for (let iCol = 0; iCol < row.cells.length; iCol++) {
+                var cell = nRow.insertCell();
+                cell.innerHTML = arr[i][row.cells[iCol].dataset.name];
+                cell.style.display = row.cells[iCol].style.display;
+            }
+
+        }
+    }
+    clear() {
+        this.elm.tBodies[0].innerHTML = '';
     }
 }
 
@@ -136,9 +162,12 @@ class formLogin extends formBlocking {
         user.setUser(result);
         this.remove();
 
-        //
-        new formUserList();
-        //
+        if (!fUserList)
+            fUserList = new formUserList();
+        else {
+            fUserList.update();
+        }
+
     }
 }
 
@@ -181,13 +210,26 @@ class formUserList extends laoElement {
     constructor(parent) {
         super('div', parent)
 
+        this.userTable = new TableElement(this.elm);
+
+        this.userTable.addColumn({ name: 'Name', repres: 'Наименование' });
+        this.userTable.addColumn({ name: 'Role', repres: 'Роль' });
+        this.userTable.addColumn({ name: 'Ref', repres: '', visible: false });
+
+        this.update();
+    }
+    onLoad(result) {
+        this.userTable.clear();
+        for (let i = 0; i < result.length; i++) {
+            result[i]['Role'] = listRole[result[i]['Role']];
+        }
+        this.userTable.loadData(result);
+    }
+    update() {
         new ServerCall(
             result => { this.onLoad(result) },
             'getUserList'
         );
-    }
-    onLoad(result) {
-
     }
 }
 
@@ -226,12 +268,6 @@ function createContainer(cls) {
 
 window.onload = ev => {
     user = new userBlock();
-    userTable = new TableElement();
-
-    userTable.addColumn({ name: 'name', repres: 'Наименование' });
-    userTable.addColumn({ name: 'role', repres: 'Роль' });
-    userTable.addColumn({ name: 'ref', repres: '', visible: false });
-
 
     new formLogin()
 }
