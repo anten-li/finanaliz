@@ -145,7 +145,7 @@ class formLogin extends formBlocking {
 
         document.forms.login.append(createButton('Ок', ev => this.login()));
 
-        this.innerForm.classList.add('form-login');
+        this.innerForm.classList.add('form-element');
     }
     login() {
         new ServerCall(
@@ -206,15 +206,29 @@ class userBlock extends laoElement {
     }
 }
 
+/**
+ * список пользователей
+ */
 class formUserList extends laoElement {
     constructor(parent) {
         super('div', parent)
 
-        this.userTable = new TableElement(this.elm);
+        var wsDIV = document.createElement('div');
+        this.elm.append(wsDIV);
+
+        var comPanel = document.createElement('div');
+        wsDIV.append(comPanel);
+        comPanel.append(createButton('Добавить пользователя', ev => { this.newUser() }));
+
+        this.userTable = new TableElement(wsDIV);
 
         this.userTable.addColumn({ name: 'Name', repres: 'Наименование' });
         this.userTable.addColumn({ name: 'Role', repres: 'Роль' });
         this.userTable.addColumn({ name: 'Ref', repres: '', visible: false });
+
+        this.elm.classList.add('form-common');
+        wsDIV.classList.add('form-work-space');
+        comPanel.classList.add('command-panel');
 
         this.update();
     }
@@ -230,6 +244,34 @@ class formUserList extends laoElement {
             result => { this.onLoad(result) },
             'getUserList'
         );
+    }
+    newUser() {
+        new formUser();
+    }
+}
+
+class formUser extends formBlocking {
+    constructor() {
+        super(true);
+
+        var elmForm = document.createElement('form');
+        elmForm.name = 'UserForm';
+        this.innerForm.append(elmForm);
+
+        var cont = createContainer('head');
+        elmForm.append(cont);
+
+        cont.append(createInput('login', 'пользователь:'));
+        cont.append(createInput('Name', 'Отображаемое имя:'));
+        cont.append(createInput('PWD', 'пароль:'));
+        cont.append(createInput('Role', 'роль:'));
+
+        elmForm.append(createButton('Ок', ev => this.save()));
+
+        this.innerForm.classList.add('form-element');
+    }
+    save() {
+        this.remove();
     }
 }
 

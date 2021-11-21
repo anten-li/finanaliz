@@ -1,3 +1,4 @@
+/* common-table */
 .common-table {
     border-collapse: collapse;
 }
@@ -7,6 +8,18 @@
     padding: 0.3em;
 }
 
+/* command-panel */
+.command-panel input {
+    vertical-align: middle;
+    height        : 1.8em;
+    margin-right  : 0.5em;
+}
+
+.command-panel {
+    margin-bottom: 0.2em;
+}
+
+/* form-blocking */
 .form-blocking {
     position  : fixed;
     left      : 0px;
@@ -27,15 +40,17 @@
     display: inline-block;
 }
 
-.form-login label {
+/* form-element */
+.form-element label {
     display      : block;
     margin-bottom: 0.2em;
 }
 
-.form-login .head {
+.form-element .head {
     text-align: right;
 }
 
+/* user-block */
 .user-block {
     float: right;
 }
@@ -50,6 +65,7 @@
     font-weight: bold;
 }
 
+/* */
 .black-transparent {
     background-color: rgba(0, 0, 0, 0.5);
 }
@@ -61,4 +77,15 @@
 .form-border {
     border : 0.1em solid;
     padding: 0.5em;
+}
+
+.form-common {
+    text-align: center;
+}
+
+.form-work-space {
+    text-align: left;
+    min-width : 80%;
+    display   : inline-block;
+    margin-top: 3em;
 }
