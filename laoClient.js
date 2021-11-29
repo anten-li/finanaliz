@@ -65,6 +65,24 @@ class laoElement {
     }
 }
 
+class laoDropdown extends laoElement {
+    constructor(parent, name) {
+        super('div', parent);
+        this.elm.append(createInput(name, '', { noLable: true }));
+        this.list = document.createElement('ul');
+        this.elm.append(this.list);
+
+        this.elm.classList.add('common-dropdown');
+        this.list.classList.add('input-width');
+    }
+    addElement(value, repres) {
+        var elm = document.createElement('li');
+        elm.dataset.value = value;
+        elm.innerHTML = repres;
+        this.list.append(elm);
+    }
+}
+
 class TableElement extends laoElement {
     constructor(parent) {
         super('table', parent);
@@ -141,7 +159,7 @@ class formLogin extends formBlocking {
         document.forms.login.append(cont);
 
         cont.append(createInput('login', 'пользователь:'));
-        cont.append(createInput('password', 'пароль:', { 'pwd': true }));
+        cont.append(createInput('password', 'пароль:', { pwd: true }));
 
         document.forms.login.append(createButton('Ок', ev => this.login()));
 
@@ -264,7 +282,14 @@ class formUser extends formBlocking {
         cont.append(createInput('login', 'пользователь:'));
         cont.append(createInput('Name', 'Отображаемое имя:'));
         cont.append(createInput('PWD', 'пароль:'));
-        cont.append(createInput('Role', 'роль:'));
+
+        var elm = document.createElement('label');
+        elm.innerHTML = 'роль:';
+        cont.append(elm);
+
+        var liRol = new laoDropdown(elm, 'Role');
+        liRol.addElement(0, 'админ');
+        liRol.addElement(1, 'пользователь');
 
         elmForm.append(createButton('Ок', ev => this.save()));
 
@@ -282,13 +307,24 @@ function b64EncodeUnicode(str) {
 }
 
 function createInput(name, value, params = {}) {
-    var lable = document.createElement('label');
-    lable.innerHTML = value;
-
     var input = document.createElement('input');
     input.name = name;
     input.type = params.pwd ? 'password' : 'text';
-    lable.append(input);
+    input.classList.add('input-width');
+
+    if (params.noLable) {
+        return input;
+    }
+
+    var lable = document.createElement('label');
+    lable.innerHTML = value;
+
+    if (params.cont) {
+        params.cont.append(input);
+        lable.append(params.cont);
+    } else {
+        lable.append(input);
+    }
 
     return lable;
 }

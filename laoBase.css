@@ -8,6 +8,27 @@
     padding: 0.3em;
 }
 
+/* common-dropdown */
+.common-dropdown {
+    display: inline-block;
+}
+
+.common-dropdown ul {
+    display         : none;
+    position        : absolute;
+    margin          : 0px;
+    padding         : 0.2em;
+    list-style-type : none;
+    cursor          : pointer;
+    background-color: white;
+    border          : 1px solid;
+    border-top      : none;
+}
+
+.common-dropdown:hover ul {
+    display: block;
+}
+
 /* command-panel */
 .command-panel input {
     vertical-align: middle;
@@ -44,6 +65,7 @@
 .form-element label {
     display      : block;
     margin-bottom: 0.2em;
+    user-select  : none;
 }
 
 .form-element .head {
@@ -88,4 +110,9 @@
     min-width : 80%;
     display   : inline-block;
     margin-top: 3em;
+}
+
+.input-width {
+    width     : 150px;
+    box-sizing: border-box;
 }
