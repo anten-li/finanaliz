@@ -66,11 +66,14 @@ class laoElement {
 }
 
 class laoDropdown extends laoElement {
-    constructor(parent, name) {
+    constructor(parent, name, fn) {
         super('div', parent);
-        this.elm.append(createInput(name, '', { noLable: true }));
+        this.input = createInput(name, '', { noLable: true });
+        this.input.disabled = true;
+        this.elm.append(this.input);
         this.list = document.createElement('ul');
         this.elm.append(this.list);
+        this.fn = fn;
 
         this.elm.classList.add('common-dropdown');
         this.list.classList.add('input-width');
@@ -79,7 +82,15 @@ class laoDropdown extends laoElement {
         var elm = document.createElement('li');
         elm.dataset.value = value;
         elm.innerHTML = repres;
+        elm.onclick = (ev) => { this.change(ev) };
         this.list.append(elm);
+    }
+    change(e) {
+        this.input.value = e.target.innerHTML;
+        this.input.dataset.value = e.target.dataset.value;
+        this.list.style.display = 'none';
+        setTimeout(() => { this.list.style.display = '' }, 500);
+        if (this.fn) this.fn();
     }
 }
 
