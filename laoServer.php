@@ -46,8 +46,13 @@ class LAOServer
                 $this->authenticate($_SERVER['HTTP_AUTHORIZATION'])
             ) {
                 $inParam = json_decode($this->queryParam, true);
-                if ($inParam['cmd'] == 'getUserList')
+                if ($inParam['cmd'] == 'getUserList'){
                     $this->exit($this->getUserList());
+                }
+                elseif ($inParam['cmd'] == 'addUser'){
+                    $Ref = $this->addUser($inParam['login'], $inParam['PWD'], $inParam['Role'], $inParam['Name']);
+                    $this->exit(['user' => $Ref]);
+                }
             } else {
                 $this->exit("authentication failure", true);
             }
@@ -128,15 +133,25 @@ class LAOServer
 
     protected function addUser($Login, $PWD, $Role = null, $Name = null)
     {
+        $userInBase = $this->queryRes(
+            "SELECT Ref FROM {$this->pref}user WHERE Login = '{$this->escape($Login)}'"
+        );
+
+        if(count($userInBase) > 0){
+            $this->exit('Логин занят', true);
+        }
+
+        $Ref = $this->createGUID();
         $salt = (string) rand(100, 999);
         $this->setRow([
-            'Ref' => $this->createGUID(),
+            'Ref' => $Ref,
             'Role' => $Role ?? 1,
             'Login' => $Login,
             'PWD' => md5($PWD . $salt),
             'Salt' => $salt,
             'Name' => $Name ?? $Login
         ], 'user');
+        return $Ref;
     }
 
     protected function getUserList()

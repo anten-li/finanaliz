@@ -11,7 +11,7 @@ var userTable;
 
 var fUserList;
 
-var listRole = ['пользователь', 'админ'];
+var listRole = ['админ', 'пользователь'];
 
 class ServerCall {
     constructor(callBackFunc, command, parameters, options) {
@@ -264,7 +264,7 @@ class formUserList extends laoElement {
     onLoad(result) {
         this.userTable.clear();
         for (let i = 0; i < result.length; i++) {
-            result[i]['Role'] = listRole[result[i]['Role']];
+            result[i]['Role'] = listRole[result[i]['Role'] - 1];
         }
         this.userTable.loadData(result);
     }
@@ -275,13 +275,15 @@ class formUserList extends laoElement {
         );
     }
     newUser() {
-        new formUser();
+        new formUser(()=>{this.update()});
     }
 }
 
 class formUser extends formBlocking {
-    constructor() {
+    constructor(onClose) {
         super(true);
+
+        this.onClose = onClose;
 
         var elmForm = document.createElement('form');
         elmForm.name = 'UserForm';
@@ -302,12 +304,26 @@ class formUser extends formBlocking {
         liRol.addElement(0, 'админ');
         liRol.addElement(1, 'пользователь');
 
+        liRol.list.children[1].onclick({ 'target': liRol.list.children[1] });
+
         elmForm.append(createButton('Ок', ev => this.save()));
 
         this.innerForm.classList.add('form-element');
     }
     save() {
-        this.remove();
+        new ServerCall(
+            result => { 
+                this.onClose();
+                this.remove(); 
+            },
+            'addUser',
+            { 
+                'login': document.forms.UserForm.login.value, 
+                'Name': document.forms.UserForm.Name.value,
+                'PWD': document.forms.UserForm.PWD.value,
+                'Role': 1 + parseInt(document.forms.UserForm.Role.dataset.value)
+            }
+        ); 
     }
 }
 
